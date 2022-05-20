@@ -1,13 +1,16 @@
 {
-    "supportFile": "cypress/support/index.tsx",
-    "pluginsFile": "cypress/plugins/index.ts",
-    "video": true,
-    "videosFolder": "cypress/results/videos",
-    "component": {
-      "componentFolder": "./www/front_src/src",
-      "testFiles": "./**/*.cypress.spec.{ts,tsx}"
-    },
-    "viewportWidth": 600,
-  "viewportHeight": 600
+  "supportFile": "cypress/support/index.tsx",
+  "pluginsFile": "cypress/plugins/index.ts",
+  "video": true,
+  "videosFolder": "cypress/results/videos",
+  "component": {
+    "componentFolder": "./www/front_src/src",
+    "testFiles": "./**/*.cypress.spec.{ts,tsx}"
+  },
+  "viewportWidth": 600,
+  "viewportHeight": 600,
+  "env": {
+    "dockerName": "centreon-web",
+    "CYPRESS_CACHE_FOLDER": "./var/cache/cypress"
+  }
 }
-
