@@ -79,4 +79,9 @@ class UpdateConfigurationRequest
      * @var int|null
      */
     public ?int $delayBeforeNewPassword;
+
+    /**
+     * @var string
+     */
+    public string $jsonConfiguration;
 }

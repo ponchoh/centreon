@@ -27,10 +27,11 @@ use Centreon\Domain\Common\Assertion\AssertionException;
 use Centreon\Domain\Log\LoggerTrait;
 use Core\Application\Common\UseCase\ErrorResponse;
 use Core\Application\Common\UseCase\NoContentResponse;
-use Core\Security\ProviderConfiguration\Domain\Local\Model\ConfigurationFactory;
-use Core\Security\ProviderConfiguration\Application\Local\Repository\WriteConfigurationRepositoryInterface;
 use Core\Application\Configuration\User\Repository\ReadUserRepositoryInterface;
-use Core\Security\ProviderConfiguration\Application\Local\UseCase\UpdateConfiguration\UpdateConfigurationRequest;
+use Core\Security\ProviderConfiguration\Application\Local\Repository\WriteConfigurationRepositoryInterface;
+use Core\Security\ProviderConfiguration\Application\Repository\ReadConfigurationFactory;
+use Core\Security\ProviderConfiguration\Domain\Model\Configuration;
+use Core\Security\ProviderConfiguration\Domain\Local\Model\CustomConfiguration;
 
 class UpdateConfiguration
 {
@@ -43,6 +44,7 @@ class UpdateConfiguration
     public function __construct(
         private WriteConfigurationRepositoryInterface $writeConfigurationRepository,
         private ReadUserRepositoryInterface $readUserRepository,
+        private ReadConfigurationFactory $readConfigurationFactory
     ) {
     }
 
@@ -57,7 +59,11 @@ class UpdateConfiguration
         $this->info('Updating Security Policy');
 
         try {
-            $configuration = ConfigurationFactory::createFromRequest($request);
+            $configuration = $this->readConfigurationFactory->getConfigurationByName(Configuration::OPENID);
+            $configuration->update($request->jsonConfiguration);
+            $jsonArr = json_decode($request->jsonConfiguration, true);
+            $configuration->setCustomConfiguration(new CustomConfiguration($jsonArr));
+            $this->updateConfiguration($configuration);
         } catch (AssertionException $ex) {
             $this->error('Unable to create Security Policy because one or many parameters are invalid');
             $presenter->setResponseStatus(new ErrorResponse($ex->getMessage()));

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace Security\Domain\Authentication\Interfaces;
 
 use Centreon\Domain\Contact\Interfaces\ContactInterface;
+use Core\Security\ProviderConfiguration\Domain\Model\Configuration;
 use Security\Domain\Authentication\Model\AuthenticationTokens;
 
 /**
@@ -73,9 +74,9 @@ interface ProviderInterface
     /**
      * Set the provider's configuration to initialize it (ex: client_id, client_secret, grant_type, ...).
      *
-     * @param ProviderConfigurationInterface $configuration
+     * @param Configuration $configuration
      */
-    public function setConfiguration(ProviderConfigurationInterface $configuration): void;
+    public function setConfiguration(Configuration $configuration): void;
 
     /**
      * Refresh the provider token.

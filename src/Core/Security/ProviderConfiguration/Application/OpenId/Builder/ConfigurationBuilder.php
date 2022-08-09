@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace Core\Security\ProviderConfiguration\Application\OpenId\Builder;
 
+use Core\Security\ProviderConfiguration\Domain\Model\Configuration;
 use Core\Security\ProviderConfiguration\Application\OpenId\UseCase\{
     UpdateOpenIdConfiguration\UpdateOpenIdConfigurationRequest
 };
@@ -31,10 +32,7 @@ use Centreon\Domain\Common\Assertion\Assertion;
 use Centreon\Domain\Common\Assertion\AssertionException;
 use Core\Contact\Domain\Model\ContactTemplate;
 use Core\Security\ProviderConfiguration\Domain\OpenId\Exceptions\OpenIdConfigurationException;
-use Core\Security\ProviderConfiguration\Domain\OpenId\Model\{
-    Configuration,
-    AuthorizationRule
-};
+use Core\Security\ProviderConfiguration\Domain\OpenId\Model\AuthorizationRule;
 
 class ConfigurationBuilder
 {

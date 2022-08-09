@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace Core\Security\Authentication\Domain\Provider;
 
 use Centreon\Domain\Contact\Interfaces\ContactInterface;
+use Core\Security\ProviderConfiguration\Domain\Model\Configuration;
 use Core\Security\ProviderConfiguration\Domain\WebSSO\Model\WebSSOConfiguration;
 use Security\Domain\Authentication\Interfaces\ProviderConfigurationInterface;
 use Security\Domain\Authentication\Interfaces\WebSSOProviderInterface;
@@ -40,9 +41,9 @@ class WebSSOProvider implements WebSSOProviderInterface
     private \Centreon $legacySession;
 
     /**
-     * @var WebSSOConfiguration
+     * @var Configuration
      */
-    private WebSSOConfiguration $configuration;
+    private Configuration $configuration;
 
     /**
      * @inheritDoc
@@ -95,11 +96,12 @@ class WebSSOProvider implements WebSSOProviderInterface
     /**
      * @inheritDoc
      */
-    public function setConfiguration(ProviderConfigurationInterface $configuration): void
+    public function setConfiguration(Configuration $configuration): void
     {
-        if (!is_a($configuration, WebSSOConfiguration::class)) {
+        /*if (!is_a($configuration, WebSSOConfiguration::class)) {
             throw new \InvalidArgumentException('Bad provider configuration');
-        }
+        }*/
+
         $this->configuration = $configuration;
     }
 

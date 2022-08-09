@@ -24,6 +24,10 @@ namespace Core\Security\Authentication\Application\Provider;
 
 use Centreon\Domain\Contact\Interfaces\ContactInterface;
 use Core\Security\Authentication\Application\UseCase\Login\LoginRequest;
+use Core\Security\Authentication\Domain\Model\AuthenticationTokens;
+use Core\Security\Authentication\Domain\Model\NewProviderToken;
+use Core\Security\Authentication\Domain\Model\ProviderToken;
+use Core\Security\ProviderConfiguration\Domain\Model\Configuration;
 
 interface ProviderInterface
 {
@@ -34,8 +38,73 @@ interface ProviderInterface
     public function authenticateOrFail(LoginRequest $request): void;
 
     /**
-     * @param LoginRequest $request
      * @return ContactInterface
      */
-    public function findUserOrFail(LoginRequest $request): ContactInterface;
+    public function findUserOrFail(): ContactInterface;
+
+    /**
+     * @return string
+     */
+    public function getUsername(): string;
+
+    /**
+     * @return bool
+     */
+    public function isAutoImportSupported(): bool;
+
+    /**
+     * @return void
+     */
+    public function autoImport(): void;
+
+    /**
+     * @return \Centreon
+     */
+    public function getLegacySession(): \Centreon;
+
+    /**
+     * @return ProviderToken
+     */
+    public function getProviderToken(): NewProviderToken;
+
+    /**
+     * @return ProviderToken|null
+     */
+    public function getProviderRefreshToken(): ?NewProviderToken;
+
+    /**
+     * @return Configuration
+     */
+    public function getConfiguration(): Configuration;
+
+    /**
+     * @param Configuration $configuration
+     * @return void
+     */
+    public function setConfiguration(Configuration $configuration): void;
+
+    /**
+     * @return bool
+     */
+    public function isUpdateACLSupported(): bool;
+
+    /**
+     * Indicates whether or not the provider has a mechanism to refresh the token.
+     *
+     * @return bool
+     */
+    public function canRefreshToken(): bool;
+
+    /**
+     * Refresh the provider token.
+     *
+     * @param AuthenticationTokens $authenticationTokens
+     * @return AuthenticationTokens|null Return the new AuthenticationTokens object if success otherwise null
+     */
+    public function refreshToken(AuthenticationTokens $authenticationTokens): ?AuthenticationTokens;
+
+    /**
+     * @return ContactInterface
+     */
+    public function getAuthenticatedUser(): ContactInterface;
 }

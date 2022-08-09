@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace Security\Domain\Authentication\Interfaces;
 
-use Security\Domain\Authentication\Model\ProviderConfiguration;
-use Security\Domain\Authentication\Interfaces\ProviderInterface;
+use Core\Security\Authentication\Application\Provider\ProviderInterface;
 use Security\Domain\Authentication\Exceptions\ProviderException;
+use Security\Domain\Authentication\Model\ProviderConfiguration;
 
 interface ProviderServiceInterface
 {

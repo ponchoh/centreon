@@ -139,4 +139,9 @@ class UpdateOpenIdConfigurationRequest
      * @var array<array{claim_value: string, access_group_id: int}>
      */
     public array $authorizationRules = [];
+
+    /**
+     * @var string
+     */
+    public string $jsonConfiguration;
 }

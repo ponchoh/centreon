@@ -86,7 +86,7 @@ class RenewPassword
         $newPassword = UserPasswordFactory::create(
             $renewPasswordRequest->newPassword,
             $user,
-            $providerConfiguration->getSecurityPolicy()
+            $providerConfiguration->getCustomConfiguration()->getSecurityPolicy()
         );
         $user->setPassword($newPassword);
 

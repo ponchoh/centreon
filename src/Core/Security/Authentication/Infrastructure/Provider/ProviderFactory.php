@@ -24,25 +24,40 @@ namespace Core\Security\Authentication\Infrastructure\Provider;
 
 use Core\Security\Authentication\Application\Provider\ProviderFactoryInterface;
 use Core\Security\Authentication\Application\Provider\ProviderInterface;
+use Core\Security\Authentication\Domain\Provider\OpenIdProvider;
+use Core\Security\ProviderConfiguration\Application\Repository\ReadConfigurationFactory;
+use Security\Domain\Authentication\Exceptions\ProviderException;
 use Security\Domain\Authentication\Model\LocalProvider;
 
 final class ProviderFactory implements ProviderFactoryInterface
 {
     /**
      * @param Local $local
+     * @param OpenId $openId
+     * @param ReadConfigurationFactory $readConfigurationRepository
      */
-    public function __construct(private Local $local)
+    public function __construct(
+        private Local                    $local,
+        private OpenId                   $openId,
+        private ReadConfigurationFactory $readConfigurationRepository)
     {
     }
 
     /**
      * @param string $providerName
      * @return ProviderInterface
+     * @throws ProviderException
      */
     public function create(string $providerName): ProviderInterface
     {
-        return match ($providerName) {
+        $provider = match ($providerName) {
             LocalProvider::NAME => $this->local,
+            OpenIdProvider::NAME => $this->openId,
+            default => throw ProviderException::providerConfigurationNotFound(LocalProvider::NAME)
         };
+
+        $provider->setConfiguration($this->readConfigurationRepository->getConfigurationByName($providerName));
+
+        return $provider;
     }
 }

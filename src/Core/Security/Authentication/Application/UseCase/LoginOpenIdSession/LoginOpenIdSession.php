@@ -156,7 +156,7 @@ class LoginOpenIdSession
         $this->debug(
             "[AUTHENTICATE] Authentication success",
             [
-                "provider_name" => Configuration::NAME,
+                "provider_name" => Configuration::OPENID,
                 "contact_id" => $user->getId(),
                 "contact_alias" => $user->getAlias()
             ]

@@ -34,4 +34,10 @@ interface ReadOpenIdConfigurationRepositoryInterface
      * @throws \Throwable
      */
     public function findConfiguration(): ?Configuration;
+
+    /**
+     * @param int $providerConfigurationId
+     * @return array
+     */
+    public function getAuthorizationRulesByConfigurationId(int $providerConfigurationId): array;
 }

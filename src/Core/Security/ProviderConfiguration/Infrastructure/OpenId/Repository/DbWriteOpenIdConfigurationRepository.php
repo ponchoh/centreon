@@ -28,7 +28,7 @@ use Centreon\Infrastructure\DatabaseConnection;
 use Centreon\Infrastructure\Repository\AbstractRepositoryDRB;
 use Core\Security\ProviderConfiguration\Application\OpenId\Repository\WriteOpenIdConfigurationRepositoryInterface
     as WriteRepositoryInterface;
-use Core\Security\ProviderConfiguration\Domain\OpenId\Model\Configuration;
+use Core\Security\ProviderConfiguration\Domain\Model\Configuration;
 
 class DbWriteOpenIdConfigurationRepository extends AbstractRepositoryDRB implements WriteRepositoryInterface
 {
@@ -55,14 +55,22 @@ class DbWriteOpenIdConfigurationRepository extends AbstractRepositoryDRB impleme
                 WHERE `name`='openid'"
             )
         );
-        $statement->bindValue(
-            ':customConfiguration',
-            json_encode($this->buildCustomConfigurationFromOpenIdConfiguration($configuration)),
-            \PDO::PARAM_STR
+
+        $statement->bindValue(':customConfiguration',
+            json_encode($this->buildCustomConfigurationFromOpenIdConfiguration($configuration))
         );
-        $statement->bindValue(':isActive', $configuration->isActive() ? '1' : '0', \PDO::PARAM_STR);
-        $statement->bindValue(':isForced', $configuration->isForced() ? '1' : '0', \PDO::PARAM_STR);
+
+        $statement->bindValue(':isActive', $configuration->isActive() ? '1' : '0');
+        $statement->bindValue(':isForced', $configuration->isForced() ? '1' : '0');
         $statement->execute();
+
+        $jsonArr = json_decode($configuration->getJsonCustomConfiguration(), true);
+        if (array_key_exists('authorization_rules', $jsonArr) && !empty($jsonArr['authorization_rules'])) {
+            $this->info('Removing existent Authorization Rules');
+            $this->deleteAuthorizationRules();
+            $this->info('Inserting new Authorization Rules');
+            $this->insertAuthorizationRules($jsonArr['authorization_rules']);
+        }
     }
 
     /**
@@ -73,27 +81,29 @@ class DbWriteOpenIdConfigurationRepository extends AbstractRepositoryDRB impleme
      */
     private function buildCustomConfigurationFromOpenIdConfiguration(Configuration $configuration): array
     {
+        $customConfiguration = $configuration->getCustomConfiguration();
+
         return [
-            'trusted_client_addresses' => $configuration->getTrustedClientAddresses(),
-            'blacklist_client_addresses' => $configuration->getBlacklistClientAddresses(),
-            'base_url' => $configuration->getBaseUrl(),
-            'authorization_endpoint' => $configuration->getAuthorizationEndpoint(),
-            'token_endpoint' => $configuration->getTokenEndpoint(),
-            'introspection_token_endpoint' => $configuration->getIntrospectionTokenEndpoint(),
-            'userinfo_endpoint' => $configuration->getUserInformationEndpoint(),
-            'endsession_endpoint' => $configuration->getEndSessionEndpoint(),
-            'connection_scopes' => $configuration->getConnectionScopes(),
-            'login_claim' => $configuration->getLoginClaim(),
-            'client_id' => $configuration->getClientId(),
-            'client_secret' => $configuration->getClientSecret(),
-            'authentication_type' => $configuration->getAuthenticationType(),
-            'verify_peer' => $configuration->verifyPeer(),
-            'auto_import' => $configuration->isAutoImportEnabled(),
-            'contact_template_id' => $configuration->getContactTemplate()?->getId(),
-            'email_bind_attribute' => $configuration->getEmailBindAttribute(),
-            'fullname_bind_attribute' => $configuration->getUserNameBindAttribute(),
-            'claim_name' => $configuration->getClaimName(),
-            'contact_group_id' => $configuration->getContactGroup()?->getId()
+            'trusted_client_addresses' => $customConfiguration->getTrustedClientAddresses(),
+            'blacklist_client_addresses' => $customConfiguration->getBlacklistClientAddresses(),
+            'base_url' => $customConfiguration->getBaseUrl(),
+            'authorization_endpoint' => $customConfiguration->getAuthorizationEndpoint(),
+            'token_endpoint' => $customConfiguration->getTokenEndpoint(),
+            'introspection_token_endpoint' => $customConfiguration->getIntrospectionTokenEndpoint(),
+            'userinfo_endpoint' => $customConfiguration->getUserInformationEndpoint(),
+            'endsession_endpoint' => $customConfiguration->getEndSessionEndpoint(),
+            'connection_scopes' => $customConfiguration->getConnectionScopes(),
+            'login_claim' => $customConfiguration->getLoginClaim(),
+            'client_id' => $customConfiguration->getClientId(),
+            'client_secret' => $customConfiguration->getClientSecret(),
+            'authentication_type' => $customConfiguration->getAuthenticationType(),
+            'verify_peer' => $customConfiguration->verifyPeer(),
+            'auto_import' => $customConfiguration->isAutoImportEnabled(),
+            'contact_template_id' => $customConfiguration->getContactTemplate()?->getId(),
+            'email_bind_attribute' => $customConfiguration->getEmailBindAttribute(),
+            'fullname_bind_attribute' => $customConfiguration->getUserNameBindAttribute(),
+            'claim_name' => $customConfiguration->getClaimName(),
+            'contact_group_id' => $customConfiguration->getContactGroup()?->getId()
         ];
     }
 
@@ -104,7 +114,7 @@ class DbWriteOpenIdConfigurationRepository extends AbstractRepositoryDRB impleme
     {
         $statement = $this->db->query("SELECT id FROM provider_configuration WHERE name='openid'");
         if ($statement !== false && ($result = $statement->fetch(\PDO::FETCH_ASSOC)) !== false) {
-            $providerConfigurationId = (int) $result['id'];
+            $providerConfigurationId = (int)$result['id'];
             $deleteStatement = $this->db->prepare(
                 "DELETE FROM security_provider_access_group_relation
                     WHERE provider_configuration_id = :providerConfigurationId"
@@ -121,17 +131,15 @@ class DbWriteOpenIdConfigurationRepository extends AbstractRepositoryDRB impleme
     {
         $statement = $this->db->query("SELECT id FROM provider_configuration WHERE name='openid'");
         if ($statement !== false && ($result = $statement->fetch(\PDO::FETCH_ASSOC)) !== false) {
-            $providerConfigurationId = (int) $result['id'];
+            $providerConfigurationId = (int)$result['id'];
             $insertStatement = $this->db->prepare(
                 "INSERT INTO security_provider_access_group_relation
                     (claim_value, access_group_id, provider_configuration_id)
                     VALUES (:claimValue, :accessGroupId, :providerConfigurationId)"
             );
             foreach ($authorizationRules as $authorizationRule) {
-                $insertStatement->bindValue(':claimValue', $authorizationRule->getClaimValue(), \PDO::PARAM_STR);
-                $insertStatement->bindValue(
-                    ':accessGroupId',
-                    $authorizationRule->getAccessGroup()->getId(),
+                $insertStatement->bindValue(':claimValue', $authorizationRule['claim_value']);
+                $insertStatement->bindValue(':accessGroupId', $authorizationRule['access_group_id'],
                     \PDO::PARAM_INT
                 );
                 $insertStatement->bindValue(':providerConfigurationId', $providerConfigurationId, \PDO::PARAM_INT);

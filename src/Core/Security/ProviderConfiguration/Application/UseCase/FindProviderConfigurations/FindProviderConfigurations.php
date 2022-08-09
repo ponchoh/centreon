@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace Core\Security\ProviderConfiguration\Application\UseCase\FindProviderConfigurations;
 
 use Core\Application\Common\UseCase\ErrorResponse;
+use Core\Security\ProviderConfiguration\Application\Repository\ReadConfigurationFactory;
 use Core\Security\ProviderConfiguration\Application\Repository\ReadProviderConfigurationsRepositoryInterface;
 use Core\Security\ProviderConfiguration\Application\UseCase\FindProviderConfigurations\ProviderResponse\{
     ProviderResponseInterface
@@ -48,6 +49,7 @@ class FindProviderConfigurations
     public function __construct(
         \Traversable $providerRepositories,
         \Traversable $providerResponses,
+        private ReadConfigurationFactory $readConfigurationFactory
     ) {
         if (iterator_count($providerRepositories) === 0) {
             throw new NotFoundException(_('No provider repositories could be found'));
@@ -65,19 +67,19 @@ class FindProviderConfigurations
      */
     public function __invoke(FindProviderConfigurationsPresenterInterface $presenter): void
     {
-        $configurations = [];
+        $configurations = $this->readConfigurationFactory->getConfigurations();
 
-        try {
-            foreach ($this->providerRepositories as $providerRepository) {
-                $configurations = [
-                    ...$configurations,
-                    ...$providerRepository->findConfigurations()
-                ];
-            }
-        } catch (\Throwable $ex) {
-            $presenter->setResponseStatus(new ErrorResponse($ex->getMessage()));
-            return;
-        }
+//        try {
+//            foreach ($this->providerRepositories as $providerRepository) {
+//                $configurations = [
+//                    ...$configurations,
+//                    ...$providerRepository->findConfigurations()
+//                ];
+//            }
+//        } catch (\Throwable $ex) {
+//            $presenter->setResponseStatus(new ErrorResponse($ex->getMessage()));
+//            return;
+//        }
 
         /**
          * match configuration type and response type to bind automatically corresponding configuration and response.

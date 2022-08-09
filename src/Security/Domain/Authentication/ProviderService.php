@@ -24,47 +24,33 @@ declare(strict_types=1);
 namespace Security\Domain\Authentication;
 
 use Centreon\Domain\Log\LoggerTrait;
-use Security\Domain\Authentication\Model\ProviderFactory;
+use Core\Security\ProviderConfiguration\Application\Repository\ReadConfigurationFactory;
+use Exception;
 use Security\Domain\Authentication\Model\ProviderConfiguration;
-use Security\Domain\Authentication\Interfaces\ProviderInterface;
 use Centreon\Domain\Authentication\Exception\AuthenticationException;
 use Security\Domain\Authentication\Exceptions\ProviderException;
 use Security\Domain\Authentication\Interfaces\ProviderServiceInterface;
 use Security\Domain\Authentication\Interfaces\AuthenticationRepositoryInterface;
 use Security\Domain\Authentication\Interfaces\ProviderRepositoryInterface;
+use Core\Security\Authentication\Application\Provider\ProviderInterface;
+use Security\Domain\Authentication\Model\ProviderFactory;
 
 class ProviderService implements ProviderServiceInterface
 {
     use LoggerTrait;
 
     /**
-     * @var AuthenticationRepositoryInterface
+     * @param AuthenticationRepositoryInterface $authenticationRepository
+     * @param ProviderRepositoryInterface $providerRepository
+     * @param ProviderFactory $providerFactory
+     * @param ReadConfigurationFactory $readConfigurationFactory
      */
-    private $authenticationRepository;
-
-    /**
-     * @var ProviderRepositoryInterface
-     */
-    private $providerRepository;
-
-    /**
-     * @var ProviderFactory
-     */
-    private $providerFactory;
-
-    /**
-    * @param AuthenticationRepositoryInterface $authenticationRepository
-    * @param ProviderRepositoryInterface $providerRepository
-    * @param ProviderFactory $providerFactory
-    */
     public function __construct(
-        AuthenticationRepositoryInterface $authenticationRepository,
-        ProviderRepositoryInterface $providerRepository,
-        ProviderFactory $providerFactory
+        private AuthenticationRepositoryInterface $authenticationRepository,
+        private ProviderRepositoryInterface $providerRepository,
+        private ProviderFactory $providerFactory,
+        private ReadConfigurationFactory $readConfigurationFactory
     ) {
-        $this->authenticationRepository = $authenticationRepository;
-        $this->providerRepository = $providerRepository;
-        $this->providerFactory = $providerFactory;
     }
 
     /**
@@ -73,14 +59,12 @@ class ProviderService implements ProviderServiceInterface
     public function findProviderByConfigurationId(int $providerConfigurationId): ?ProviderInterface
     {
         try {
-            $providerConfiguration = $this->providerRepository->findProviderConfiguration($providerConfigurationId);
+            $configuration = $this->readConfigurationFactory->getConfigurationById($providerConfigurationId);
         } catch (\Exception $ex) {
             throw ProviderException::findProvidersConfigurations($ex);
         }
-        if ($providerConfiguration === null) {
-            return null;
-        }
-        return $this->providerFactory->create($providerConfiguration);
+
+        return $this->providerFactory->create($configuration);
     }
 
     /**
@@ -90,17 +74,12 @@ class ProviderService implements ProviderServiceInterface
     {
         $this->info("[PROVIDER SERVICE] Looking for provider '$providerConfigurationName'");
         try {
-            $providerConfiguration = $this->providerRepository->findProviderConfigurationByConfigurationName(
-                $providerConfigurationName
-            );
+            $configuration = $this->readConfigurationFactory->getConfigurationByName($providerConfigurationName);
         } catch (\Exception $ex) {
             throw ProviderException::findProviderConfiguration($providerConfigurationName, $ex);
         }
 
-        if ($providerConfiguration === null) {
-            return null;
-        }
-        return $this->providerFactory->create($providerConfiguration);
+        return $this->providerFactory->create($configuration);
     }
 
     /**
@@ -127,7 +106,7 @@ class ProviderService implements ProviderServiceInterface
     ): ?ProviderConfiguration {
         try {
             return $this->providerRepository->findProviderConfigurationByConfigurationName($providerConfigurationName);
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             throw ProviderException::findProviderConfiguration($providerConfigurationName, $ex);
         }
     }

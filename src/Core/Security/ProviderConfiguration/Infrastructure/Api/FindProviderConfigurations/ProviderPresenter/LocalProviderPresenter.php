@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace Core\Security\ProviderConfiguration\Infrastructure\Api\FindProviderConfigurations\ProviderPresenter;
 
+use Core\Security\ProviderConfiguration\Domain\Model\Configuration;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Core\Security\ProviderConfiguration\Application\UseCase\FindProviderConfigurations\ProviderResponse\{
     LocalProviderResponse
@@ -55,8 +56,7 @@ class LocalProviderPresenter implements ProviderPresenterInterface
     {
         $authenticationUri = $this->router->generate(
             'centreon_security_authentication_login',
-            [],
-        );
+            ['providerName' => Configuration::LOCAL]);
 
         return [
             'id' => $response->id,

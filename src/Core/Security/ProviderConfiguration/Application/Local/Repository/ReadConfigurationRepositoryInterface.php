@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace Core\Security\ProviderConfiguration\Application\Local\Repository;
 
-use Core\Security\ProviderConfiguration\Domain\Local\Model\Configuration;
+use Core\Security\ProviderConfiguration\Domain\Model\Configuration;
 
 interface ReadConfigurationRepositoryInterface
 {
@@ -33,4 +33,15 @@ interface ReadConfigurationRepositoryInterface
      * @return Configuration|null
      */
     public function findConfiguration(): ?Configuration;
+
+    /**
+     * @return array
+     */
+    public function findExcludedUsers(): array;
+
+    /**
+     * @param int $providerConfigurationId
+     * @return array
+     */
+    public function getAuthorizationRulesByProviderId(int $providerConfigurationId): array;
 }

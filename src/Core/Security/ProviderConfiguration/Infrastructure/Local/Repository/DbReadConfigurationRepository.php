@@ -24,12 +24,13 @@ declare(strict_types=1);
 namespace Core\Security\ProviderConfiguration\Infrastructure\Local\Repository;
 
 use Centreon\Domain\Log\LoggerTrait;
-use Core\Security\ProviderConfiguration\Domain\Local\Model\Configuration;
 use Centreon\Infrastructure\DatabaseConnection;
 use Centreon\Infrastructure\Repository\AbstractRepositoryDRB;
-use Core\Security\ProviderConfiguration\Infrastructure\Local\Repository\DbConfigurationFactory;
-use Core\Security\ProviderConfiguration\Application\Repository\ReadProviderConfigurationsRepositoryInterface;
+use Core\Security\AccessGroup\Infrastructure\Repository\DbAccessGroupFactory;
 use Core\Security\ProviderConfiguration\Application\Local\Repository\ReadConfigurationRepositoryInterface;
+use Core\Security\ProviderConfiguration\Application\Repository\ReadProviderConfigurationsRepositoryInterface;
+use Core\Security\ProviderConfiguration\Domain\Model\Configuration;
+use Core\Security\ProviderConfiguration\Domain\OpenId\Model\AuthorizationRule;
 
 class DbReadConfigurationRepository extends AbstractRepositoryDRB implements
     ReadProviderConfigurationsRepositoryInterface,
@@ -100,7 +101,7 @@ class DbReadConfigurationRepository extends AbstractRepositoryDRB implements
      *
      * @return array<string,mixed>
      */
-    private function findExcludedUsers(): array
+    public function findExcludedUsers(): array
     {
         $statement = $this->db->query(
             $this->translateDbName(
@@ -119,5 +120,27 @@ class DbReadConfigurationRepository extends AbstractRepositoryDRB implements
         }
 
         return $excludedUsers;
+    }
+
+    /**
+     * @param int $providerConfigurationId
+     * @return array
+     */
+    public function getAuthorizationRulesByProviderId(int $providerConfigurationId): array
+    {
+        $statement = $this->db->prepare(
+            "SELECT * from security_provider_access_group_relation spagn
+                INNER JOIN acl_groups ON acl_group_id = spagn.access_group_id
+                WHERE spagn.provider_configuration_id = :providerConfigurationId"
+        );
+        $statement->bindValue(':providerConfigurationId', $providerConfigurationId, \PDO::PARAM_INT);
+        $statement->execute();
+
+        $authorizationRules = [];
+        while ($statement !== false && is_array($result = $statement->fetch(\PDO::FETCH_ASSOC))) {
+            $accessGroup = DbAccessGroupFactory::createFromRecord($result);
+            $authorizationRules[] = new AuthorizationRule($result['claim_value'], $accessGroup);
+        }
+        return $authorizationRules;
     }
 }

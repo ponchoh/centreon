@@ -96,6 +96,7 @@ class AbstractRepositoryDRB
         );
 
         if ($validator->isValid() === false) {
+            dd($validator->getErrors());
             $message = '';
             foreach ($validator->getErrors() as $error) {
                 $message .= sprintf("[%s] %s\n", $error['property'], $error['message']);

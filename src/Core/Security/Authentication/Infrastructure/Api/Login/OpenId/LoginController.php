@@ -21,20 +21,21 @@
 
 declare(strict_types=1);
 
-namespace Core\Security\Authentication\Infrastructure\Api\Login;
+namespace Core\Security\Authentication\Infrastructure\Api\Login\OpenId;
 
 use Centreon\Application\Controller\AbstractController;
 use Core\Infrastructure\Common\Api\HttpUrlTrait;
 use Core\Security\Authentication\Application\UseCase\Login\Login;
 use Core\Security\Authentication\Application\UseCase\Login\LoginPresenterInterface;
 use Core\Security\Authentication\Application\UseCase\Login\LoginRequest;
+use Core\Security\Authentication\Domain\Exception\AuthenticationException;
+use Core\Security\ProviderConfiguration\Domain\Model\Configuration;
 use FOS\RestBundle\View\View;
-use JetBrains\PhpStorm\NoReturn;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
-final class LoginController extends AbstractController
+class LoginController extends AbstractController
 {
     use HttpUrlTrait;
 
@@ -44,37 +45,47 @@ final class LoginController extends AbstractController
      * @param LoginPresenter $presenter
      * @param SessionInterface $session
      * @return object
+     * @throws AuthenticationException
      */
-    #[NoReturn] public function __invoke(Request                 $request,
-                                         Login                   $useCase,
-                                         LoginPresenterInterface $presenter,
-                                         SessionInterface        $session,
-                                         string                  $providerName): object
+    public function __invoke(
+        Request                 $request,
+        Login                   $useCase,
+        LoginPresenterInterface $presenter,
+        SessionInterface        $session
+    ): object
     {
-        $payload = \json_decode($request->getContent(), true);
-        $useCase(new LoginRequest($payload, $request->getClientIp(), $providerName), $presenter);
+        $request = LoginRequest::createForOpenId(
+            Configuration::OPENID,
+            $request->getClientIp(),
+            $request->query->get("code"));
+
+        $useCase($request, $presenter);
+
         $response = $presenter->getPresentedData();
-        dd("ok");
+        if ($response->error !== null) {
+            return View::createRedirect(
+                $this->getBaseUrl() . '/login?authenticationError=' . $response->getError()->getMessage(),
+                Response::HTTP_FOUND
+            );
+        }
+
         return View::createRedirect(
-            $this->getBaseUrl() . $response->redirectUri,
+            $this->getBaseUrl() . $response->getRedirectUri(),
             Response::HTTP_FOUND,
             ['Set-Cookie' => 'PHPSESSID=' . $session->getId()]
         );
-        //if ($response->error )
-//        $loginOpenIdSessionRequest = $this->createLoginOpenIdSessionRequest($request);
-//        $useCase($loginOpenIdSessionRequest, $presenter);
-//        $response = $presenter->getPresentedData();
-//        if ($response->error !== null) {
-//            return View::createRedirect(
-//                $this->getBaseUrl() . '/login?authenticationError=' . $response->error,
-//                Response::HTTP_FOUND
-//            );
-//        }
-//
-//        return View::createRedirect(
-//            $this->getBaseUrl() . $response->redirectUri,
-//            Response::HTTP_FOUND,
-//            ['Set-Cookie' =>  'PHPSESSID=' . $session->getId()]
-//        );
+    }
+
+    /**
+     * @param Request $request
+     * @return LoginOpenIdSessionRequest
+     */
+    private function createLoginOpenIdSessionRequest(Request $request): LoginOpenIdSessionRequest
+    {
+        $loginOpenIdSessionRequest = new LoginOpenIdSessionRequest();
+        $loginOpenIdSessionRequest->authorizationCode = $request->query->get('code');
+        $loginOpenIdSessionRequest->clientIp = $request->getClientIp();
+
+        return $loginOpenIdSessionRequest;
     }
 }

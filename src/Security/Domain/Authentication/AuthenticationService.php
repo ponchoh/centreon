@@ -23,7 +23,10 @@ declare(strict_types=1);
 namespace Security\Domain\Authentication;
 
 use Centreon\Domain\Log\LoggerTrait;
-use Security\Domain\Authentication\Model\AuthenticationTokens;
+use Core\Security\Authentication\Application\Repository\ReadTokenRepositoryInterface;
+use Core\Security\Authentication\Domain\Model\AuthenticationTokens;
+use Core\Security\Authentication\Infrastructure\Provider\ProviderFactory;
+use Core\Security\ProviderConfiguration\Application\Repository\ReadConfigurationFactory;
 use Centreon\Domain\Authentication\Exception\AuthenticationException;
 use Security\Domain\Authentication\Interfaces\AuthenticationServiceInterface;
 use Security\Domain\Authentication\Interfaces\AuthenticationRepositoryInterface;
@@ -39,41 +42,23 @@ class AuthenticationService implements AuthenticationServiceInterface
     use LoggerTrait;
 
     /**
-     * @var AuthenticationRepositoryInterface
-     */
-    private $authenticationRepository;
-
-    /**
-     * @var ProviderServiceInterface
-     */
-    private $providerService;
-
-    /**
-     * @var SessionRepositoryInterface
-     */
-    private $sessionRepository;
-
-    /**
-     * @var WriteTokenRepositoryInterface
-     */
-    private $writeTokenRepository;
-
-    /**
      * @param AuthenticationRepositoryInterface $authenticationRepository
      * @param ProviderServiceInterface $providerService
      * @param SessionRepositoryInterface $sessionRepository
      * @param WriteTokenRepositoryInterface $writeTokenRepository
+     * @param ReadConfigurationFactory $readConfigurationFactory
+     * @param ProviderFactory $providerFactory
+     * @param ReadTokenRepositoryInterface $readTokenRepository
      */
     public function __construct(
-        AuthenticationRepositoryInterface $authenticationRepository,
-        ProviderServiceInterface $providerService,
-        SessionRepositoryInterface $sessionRepository,
-        WriteTokenRepositoryInterface $writeTokenRepository,
+        private AuthenticationRepositoryInterface $authenticationRepository,
+        private ProviderServiceInterface $providerService,
+        private SessionRepositoryInterface $sessionRepository,
+        private WriteTokenRepositoryInterface $writeTokenRepository,
+        private ReadConfigurationFactory $readConfigurationFactory,
+        private ProviderFactory $providerFactory,
+        private ReadTokenRepositoryInterface $readTokenRepository
     ) {
-        $this->authenticationRepository = $authenticationRepository;
-        $this->sessionRepository = $sessionRepository;
-        $this->providerService = $providerService;
-        $this->writeTokenRepository = $writeTokenRepository;
     }
 
     /**
@@ -87,9 +72,11 @@ class AuthenticationService implements AuthenticationServiceInterface
             return false;
         }
 
-        $provider = $this->providerService->findProviderByConfigurationId(
+        $configuration = $this->readConfigurationFactory->getConfigurationById(
             $authenticationTokens->getConfigurationProviderId()
         );
+
+        $provider = $this->providerFactory->create($configuration->getName());
 
         if ($provider === null) {
             $this->notice('[AUTHENTICATION SERVICE] Provider not found');
@@ -147,7 +134,7 @@ class AuthenticationService implements AuthenticationServiceInterface
     public function findAuthenticationTokensByToken(string $token): ?AuthenticationTokens
     {
         try {
-            return $this->authenticationRepository->findAuthenticationTokensByToken($token);
+            return $this->readTokenRepository->findAuthenticationTokensByToken($token);
         } catch (\Exception $ex) {
             throw AuthenticationException::findAuthenticationToken($ex);
         }
